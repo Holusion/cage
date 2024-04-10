@@ -87,14 +87,14 @@ view_center(struct cg_view *view, struct wlr_box *layout_box)
 void
 view_position(struct cg_view *view)
 {
-	struct wlr_box layout_box;
+/* 	struct wlr_box layout_box;
 	wlr_output_layout_get_box(view->server->output_layout, NULL, &layout_box);
 
 	if (view_is_primary(view) || view_extends_output_layout(view, &layout_box)) {
 		view_maximize(view, &layout_box);
 	} else {
 		view_center(view, &layout_box);
-	}
+	} */
 }
 
 void

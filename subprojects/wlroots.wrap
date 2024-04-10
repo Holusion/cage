@@ -1,0 +1,8 @@
+[wrap-file]
+directory = wlroots-0.17.2
+source_url =https://gitlab.freedesktop.org/wlroots/wlroots/-/releases/0.17.2/downloads/wlroots-0.17.2.tar.gz
+source_filename = wlroots-0.17.2.tar.xz
+source_hash = f4007d3f71e190b9000ab4a30afd87833b034ab2602030a00af4465ffd4e997c
+
+[provide]
+wlroots = wlroots

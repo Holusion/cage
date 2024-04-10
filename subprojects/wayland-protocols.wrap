@@ -1,0 +1,8 @@
+[wrap-file]
+directory = wayland-protocols-1.33
+source_url = https://gitlab.freedesktop.org/wayland/wayland-protocols/-/releases/1.33/downloads/wayland-protocols-1.33.tar.xz
+source_filename = wayland-protocols-1.33.tar.xz
+source_hash = 94f0c50b090d6e61a03f62048467b19abbe851be4e11ae7b36f65f8b98c3963a
+
+[provide]
+wayland-protocols = wayland_protocols

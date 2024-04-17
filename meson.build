@@ -91,6 +91,7 @@ endif
 conf_data = configuration_data()
 conf_data.set10('CAGE_HAS_XWAYLAND', have_xwayland)
 conf_data.set_quoted('CAGE_VERSION', version)
+conf_data.set10('CAGE_HAS_INPUT_CALIBRATION', get_option('input_calibration').enabled())
 
 scdoc = dependency('scdoc', version: '>=1.9.2', native: true, required: get_option('man-pages'))
 if scdoc.found()
@@ -144,6 +145,13 @@ if conf_data.get('CAGE_HAS_XWAYLAND', 0) == 1
   cage_headers += 'xwayland.h'
 endif
 
+if conf_data.get('CAGE_HAS_INPUT_CALIBRATION', 0) == 1
+  cage_sources += 'protocol/input_calibration.c'
+  cage_sources += 'calibration.c'
+  cage_headers += 'protocol/input_calibration.h'
+  cage_headers += 'calibration.h'
+endif
+
 executable(
   meson.project_name(),
   cage_sources + cage_headers,
@@ -162,6 +170,7 @@ summary = [
   'Cage @0@'.format(version),
   '',
   '    xwayland: @0@'.format(have_xwayland),
+  '    calibration: @0@'.format(get_option('input_calibration').enabled()),
   ''
 ]
 message('\n'.join(summary))

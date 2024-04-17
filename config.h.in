@@ -5,4 +5,6 @@
 
 #mesondefine CAGE_VERSION
 
+#mesondefine CAGE_HAS_INPUT_CALIBRATION
+
 #endif

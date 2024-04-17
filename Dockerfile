@@ -27,6 +27,7 @@ RUN  apt-get -qqy update \
   libexpat1-dev \
   libffi-dev \
   libxml2-dev \
+  liblzma-dev \
 && rm -rf /var/lib/apt/lists/*
 
 # wlroots build-deps (https://packages.debian.org/source/bookworm/wlroots)
@@ -69,9 +70,12 @@ RUN  apt-get -qqy update \
 
 WORKDIR /app
 COPY . /app
+
+RUN rm -rf /app/build
+
 RUN meson setup build --prefer-static --default-library=static --buildtype=release -Dwerror=false -Doptimization=2 \
   -Dxwayland=enabled \
   -Dwlroots:auto_features=enabled -Dwlroots:backends=auto -Dwlroots:renderers=auto \
-  -Dwayland:documentation=false
+  -Dwayland:documentation=false -Dwayland:tests=false
 
 RUN ninja -C build

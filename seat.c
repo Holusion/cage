@@ -42,6 +42,10 @@
 #if CAGE_HAS_XWAYLAND
 #include "xwayland.h"
 #endif
+#if CAGE_HAS_INPUT_CALIBRATION
+#include "calibration.h"
+#endif
+
 
 static void drag_icon_update_position(struct cg_drag_icon *drag_icon);
 
@@ -138,7 +142,6 @@ static void
 map_input_device_to_output(struct cg_seat *seat, struct wlr_input_device *device, const char *output_name)
 {
 	if (!output_name) {
-		wlr_log(WLR_INFO, "Input device %s cannot be mapped to an output device\n", device->name);
 		return;
 	}
 
@@ -187,6 +190,7 @@ handle_new_touch(struct cg_seat *seat, struct wlr_touch *wlr_touch)
 	wl_signal_add(&wlr_touch->base.events.destroy, &touch->destroy);
 
 	map_input_device_to_output(seat, &wlr_touch->base, wlr_touch->output_name);
+
 }
 
 static void
@@ -427,6 +431,7 @@ handle_new_input(struct wl_listener *listener, void *data)
 {
 	struct cg_seat *seat = wl_container_of(listener, seat, new_input);
 	struct wlr_input_device *device = data;
+	wlr_log(WLR_DEBUG, "Handle new input device %s", device->name);
 
 	switch (device->type) {
 	case WLR_INPUT_DEVICE_KEYBOARD:
@@ -448,6 +453,10 @@ handle_new_input(struct wl_listener *listener, void *data)
 	}
 
 	update_capabilities(seat);
+#if CAGE_HAS_INPUT_CALIBRATION
+		input_calibration_add(seat->input_calibration_manager, device);
+#endif
+
 }
 
 static void
@@ -824,6 +833,17 @@ seat_create(struct cg_server *server, struct wlr_backend *backend)
 		return NULL;
 	}
 	wlr_cursor_attach_output_layout(seat->cursor, server->output_layout);
+
+
+#if CAGE_HAS_INPUT_CALIBRATION
+	seat->input_calibration_manager = create_input_calibration(seat);
+	if (!seat->input_calibration_manager) {
+		wlr_log(WLR_ERROR, "Unable to create the input calibration manager");
+		wl_list_remove(&seat->destroy.link);
+		free(seat);
+		return NULL;
+	}
+#endif
 
 	if (!seat->xcursor_manager) {
 		seat->xcursor_manager = wlr_xcursor_manager_create(NULL, XCURSOR_SIZE);

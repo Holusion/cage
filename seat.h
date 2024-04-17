@@ -10,6 +10,9 @@
 
 #include "server.h"
 #include "view.h"
+#ifdef CAGE_HAS_INPUT_CALIBRATION
+#include "calibration.h"
+#endif
 
 #define DEFAULT_XCURSOR "left_ptr"
 #define XCURSOR_SIZE 24
@@ -17,6 +20,10 @@
 struct cg_seat {
 	struct wlr_seat *seat;
 	struct cg_server *server;
+#ifdef CAGE_HAS_INPUT_CALIBRATION
+	struct input_calibration_manager_v1 *input_calibration_manager;
+#endif
+
 	struct wl_listener destroy;
 
 	struct wl_list keyboards;

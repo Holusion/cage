@@ -271,7 +271,7 @@ main(int argc, char *argv[])
 	}
 
 #ifdef DEBUG
-	wlr_log_init(WLR_DEBUG, NULL);
+	wlr_log_init(WLR_INFO, NULL);
 #else
 	wlr_log_init(WLR_ERROR, NULL);
 #endif

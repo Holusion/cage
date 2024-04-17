@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<protocol name="ext_input_device_calibration_unstable_v1">
+
+  <copyright>
+    Copyright © 2024 Holusion SAS
+
+    Permission is hereby granted, free of charge, to any person obtaining a
+    copy of this software and associated documentation files (the "Software"),
+    to deal in the Software without restriction, including without limitation
+    the rights to use, copy, modify, merge, publish, distribute, sublicense,
+    and/or sell copies of the Software, and to permit persons to whom the
+    Software is furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice (including the next
+    paragraph) shall be included in all copies or substantial portions of the
+    Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+    THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+    DEALINGS IN THE SOFTWARE.
+  </copyright>
+
+  <description summary="Protocol to handle input devices dynamic calibration">
+    This protocol allows dynamic calibration of input devices by the clients.
+
+    Typically absolute input devices (such as touchscreens) need to be mapped
+    to once specific output in case of multiple outputs setups. However the 
+    compositor may not have enough information to do this mapping. This protocol
+    allows client to make this decision using external knowledge.
+
+    Warning! The protocol described in this file is experimental and
+    backward incompatible changes may be made. Backward compatible
+    changes may be added together with the corresponding interface
+    version bump.
+  </description>
+
+  <interface name="ext_input_calibration_manager_v1" version="1">
+    <description summary="manage input devices calibration">
+      A global factory interface for input_device objects.
+    </description>
+
+    <request name="destroy" type="destructor">
+      <description summary="destroy the ext_input_calibration_manager object">
+	      Using this request a client can tell the server that it is not
+	      going to use the object anymore.
+      </description>
+    </request>
+
+    <event name="add">
+      <description summary="new input device">
+        This event is sent when a new input device is added
+      </description>
+      <arg name="id" type="new_id" interface="ext_input_device_v1"
+        summary="the new input device"/>
+    </event>
+
+    <event name="done">
+      <description summary="sent all information about active inputs">
+        This event is sent after all information has been sent after binding to
+        the output manager object and after any subsequent changes. This applies
+        to child devices as well. In other words, this event is sent whenever a
+        head or mode is created or destroyed and whenever one of their properties
+        has been changed. Not all state is re-sent each time the current
+        configuration changes: only the actual changes are sent.
+
+        This allows changes to the input configuration to be seen as atomic,
+        even if they happen via multiple events.
+
+      </description>
+    </event>
+  </interface>
+
+  <interface name="ext_input_device_v1" version="1">
+    <description summary="compositor input device">
+      An ext_input_device object represents an input device in the compositor.
+    </description>
+
+    <enum name="error">
+      <entry name="no_such_output" value="1"
+        summary="requested output name was not found"/>
+      <entry name="bad_boundaries" value="2"
+        summary="could not match the requested boundaries"/>
+      <entry name="already_used" value="3"
+        summary="request sent after configuration has been applied or tested"/>
+    </enum>
+
+    <enum name="types">
+      <entry name="keyboard" value="0" summary="keyboard device"/>
+      <entry name="pointer" value="1" summary="pointer (typ. mouse) device"/>
+      <entry name="touch" value="2" summary="touchscreen / trackpad device"/>
+      <entry name="tablet_tool" value="3" summary="tablet tool device"/>
+      <entry name="tablet_pad" value="4" summary="tablet pad device"/>
+      <entry name="switch" value="5" summary="switch device"/>
+    </enum>
+
+    <request name="release" type="destructor">
+      <description summary="release the ext_input_device object">
+        Using this request a client can tell the server that it is not
+        going to use the object anymore.
+      </description>
+    </request>
+
+    <request name="map_to_region">
+      <description summary="map the input device to a box">
+        Asks the compositor to map the input device's absolute coordinates to a
+        rectangle in output space
+      </description>
+      <arg name="width" type="int" summary="width in pixels of the box"/>
+      <arg name="height" type="int" summary="width in pixels of the box"/>
+      <arg name="x" type="int" summary="x position of the box"/>
+      <arg name="y" type="int" summary="y position of the box"/>
+    </request>
+
+    <request name="map_to_output">
+      <description summary="map the input device to an output device">
+        Asks the compositor to map the input device's absolute coordinates to an
+        output device's on-screen position.
+
+        The output name should be the value reported by xdg_output.name and zwlr_output_head_v1.name
+      </description>
+      <arg name="output" type="string" summary="output name to map to"/>
+    </request>
+
+    <event name="removed">
+      <description summary="input device removed">
+        This event is sent when the input device is removed
+        Clients should release it.
+      </description>
+    </event>
+
+    <event name="name">
+      <description summary="The input device's name">
+        An input device will generally have a manufacturer's defined name
+        describing the device. This event provides that name.
+      </description>
+      <arg name="name" type="string" summary="input name"/>
+    </event>
+
+    <event name="vendor">
+      <description summary="The input device's vendor">
+        An input device will have a vendor, as in "USB Bus vendor ID".
+      </description>
+      <arg name="vendor" type="uint" summary="input vendor"/>
+    </event>
+
+    <event name="product">
+      <description summary="The input device product identifier">
+        An input device will have a USB Bus product ID.
+      </description>
+      <arg name="vendor" type="uint" summary="input product"/>
+    </event>
+
+    <event name="type">
+      <description summary="The input device's type">
+        An input device will have a type, such as "touch" or "pointer"
+      </description>
+      <arg name="type" type="int" enum="ext_input_device_v1.types" summary="input type"/>
+    </event>
+    <!-- Add other device properties -->
+    
+  </interface>
+</protocol>

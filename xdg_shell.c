@@ -111,6 +111,17 @@ get_geometry(struct cg_view *view, int *width_out, int *height_out)
 	*height_out = geom.height;
 }
 
+static void get_position(struct cg_view *view, int *x_out, int *y_out)
+{
+	struct cg_xdg_shell_view *xdg_shell_view = xdg_shell_view_from_view(view);
+	struct wlr_box geom;
+
+	wlr_xdg_surface_get_geometry(xdg_shell_view->xdg_toplevel->base, &geom);
+	*x_out = geom.width;
+	*y_out = geom.height;
+}
+
+
 static bool
 is_primary(struct cg_view *view)
 {
@@ -213,6 +224,7 @@ handle_xdg_shell_surface_destroy(struct wl_listener *listener, void *data)
 static const struct cg_view_impl xdg_shell_view_impl = {
 	.get_title = get_title,
 	.get_geometry = get_geometry,
+	.get_position = get_position,
 	.is_primary = is_primary,
 	.is_transient_for = is_transient_for,
 	.activate = activate,

@@ -15,6 +15,7 @@
 #include <wayland-server-core.h>
 #include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_scene.h>
+#include <wlr/util/log.h>
 
 #include "output.h"
 #include "seat.h"
@@ -87,9 +88,19 @@ view_center(struct cg_view *view, struct wlr_box *layout_box)
 void
 view_position(struct cg_view *view)
 {
-/* 	struct wlr_box layout_box;
+	struct wlr_box layout_box;
 	wlr_output_layout_get_box(view->server->output_layout, NULL, &layout_box);
+	struct wlr_box geom;
+	view->impl->get_geometry(view, &geom.width, &geom.height);
+	view->impl->get_position(view, &view->lx, &view->ly);
 
+	if(view_is_primary(view)){
+		wlr_log(WLR_INFO, "primary view: %dx%d+%d+%d",geom.width, geom.height, view->lx, view->ly);
+	}else{
+		wlr_log(WLR_INFO, "view_position %dx%d+%d+%d",geom.width, geom.height, view->lx, view->ly);
+	}
+	wlr_scene_node_set_position(&view->scene_tree->node, view->lx, view->ly);
+	/*
 	if (view_is_primary(view) || view_extends_output_layout(view, &layout_box)) {
 		view_maximize(view, &layout_box);
 	} else {

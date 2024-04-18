@@ -52,6 +52,21 @@ get_geometry(struct cg_view *view, int *width_out, int *height_out)
 	*height_out = xsurface->surface->current.height;
 }
 
+static void
+get_position(struct cg_view *view, int *x_out, int *y_out)
+{
+	struct cg_xwayland_view *xwayland_view = xwayland_view_from_view(view);
+	struct wlr_xwayland_surface *xsurface = xwayland_view->xwayland_surface;
+	if (xsurface->size_hints == NULL) {
+		*x_out = xsurface->x;
+		*y_out = xsurface->y;
+		return;
+	}
+	*x_out = xsurface->size_hints->x;
+	*y_out = xsurface->size_hints->y;
+}
+
+
 static bool
 is_primary(struct cg_view *view)
 {
@@ -149,6 +164,7 @@ handle_xwayland_surface_destroy(struct wl_listener *listener, void *data)
 static const struct cg_view_impl xwayland_view_impl = {
 	.get_title = get_title,
 	.get_geometry = get_geometry,
+	.get_position = get_position,
 	.is_primary = is_primary,
 	.is_transient_for = is_transient_for,
 	.activate = activate,

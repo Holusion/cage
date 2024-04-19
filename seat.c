@@ -934,7 +934,7 @@ seat_set_focus(struct cg_seat *seat, struct cg_view *view)
 
 	/* Move the view to the front, but only if it isn't a
 	   fullscreen view. */
-	if (!view_is_primary(view)) {
+	/*if (!view_is_primary(view))*/ {
 		wl_list_remove(&view->link);
 		wl_list_insert(&server->views, &view->link);
 	}

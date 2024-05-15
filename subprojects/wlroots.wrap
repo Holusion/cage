@@ -4,5 +4,7 @@ source_url =https://gitlab.freedesktop.org/wlroots/wlroots/-/releases/0.17.2/dow
 source_filename = wlroots-0.17.2.tar.xz
 source_hash = f4007d3f71e190b9000ab4a30afd87833b034ab2602030a00af4465ffd4e997c
 
+diff_files = 0001-use-local-wayland-scanner.patch
+
 [provide]
 wlroots = wlroots

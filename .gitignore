@@ -1,2 +1,6 @@
 /subprojects/**
 !/subprojects/*.wrap
+!/subprojects/packagecache
+!/subprojects/packagecache/.placeholder
+!/subprojects/packagefiles
+!/subprojects/packagefiles/*.patch

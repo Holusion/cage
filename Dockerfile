@@ -1,9 +1,11 @@
 FROM debian:12-slim
 #debian 12 is required to have a recent-enough built-in meson.
+ENV DEBIAN_FRONTEND=noninteractive
 
 # Install build tools
 RUN  apt-get -qqy update \
   && apt-get -qqy --no-install-recommends install \
+    git \
     ca-certificates \
     build-essential \
     cmake \
@@ -26,13 +28,9 @@ RUN  apt-get -qqy update \
   quilt \
   libexpat1-dev \
   libffi-dev \
-  libxml2-dev \
-  liblzma-dev \
 && rm -rf /var/lib/apt/lists/*
 
 # wlroots build-deps (https://packages.debian.org/source/bookworm/wlroots)
-# - libwayland-dev is required for wayland-scanner, which is set as "native" but could probablyt be force to use the local file.
-#     (https://gitlab.freedesktop.org/wlroots/wlroots/-/blob/master/protocol/meson.build#L8)
 RUN  apt-get -qqy update \
 && apt-get -qqy --no-install-recommends install \
   libavformat-dev \
@@ -63,19 +61,34 @@ RUN  apt-get -qqy update \
   libx11-xcb-dev \
   libxkbcommon-dev \
   hwdata \
-  libwayland-dev \
   xwayland \
   libxcb-ewmh-dev \
 && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-COPY . /app
 
-RUN rm -rf /app/build
+RUN mkdir -p /app/subprojects
 
-RUN meson setup build --prefer-static --default-library=static --buildtype=release -Dwerror=false -Doptimization=2 \
-  -Dxwayland=enabled \
+COPY  meson_options.txt meson.build /app/
+COPY *.in *.scd .clang-format .clang-format-ignore /app/
+
+COPY subprojects/*.wrap  /app/subprojects/
+COPY subprojects/packagefiles /app/subprojects/packagefiles
+COPY subprojects/packagecache /app/subprojects/packagecache
+
+COPY ./protocol /app/protocol
+COPY *.[ch] /app/
+
+
+# Fix for the use of local wayland-scanner in subsequent builds
+ENV PATH="${PATH}:/app/build/subprojects/wayland-1.22.0/src"
+
+RUN meson setup build --prefer-static --default-library=static --buildtype=release -Dwerror=false \
+  -Dxwayland=enabled -Dinput_calibration=enabled -Dman-pages=disabled \
   -Dwlroots:auto_features=enabled -Dwlroots:backends=auto -Dwlroots:renderers=auto \
-  -Dwayland:documentation=false -Dwayland:tests=false
+  -Dwayland:documentation=false -Dwayland:dtd_validation=false
 
 RUN ninja -C build
+
+# Makes the image unusable, but useful to use with `docker buildx build --output=type=local`as we are.
+RUN rm -rf /usr /var

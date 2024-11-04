@@ -247,9 +247,7 @@ struct ext_input_device_v1_interface {
 
 #define EXT_INPUT_DEVICE_V1_REMOVED 0
 #define EXT_INPUT_DEVICE_V1_NAME 1
-#define EXT_INPUT_DEVICE_V1_VENDOR 2
-#define EXT_INPUT_DEVICE_V1_PRODUCT 3
-#define EXT_INPUT_DEVICE_V1_TYPE 4
+#define EXT_INPUT_DEVICE_V1_TYPE 2
 
 /**
  * @ingroup iface_ext_input_device_v1
@@ -259,14 +257,6 @@ struct ext_input_device_v1_interface {
  * @ingroup iface_ext_input_device_v1
  */
 #define EXT_INPUT_DEVICE_V1_NAME_SINCE_VERSION 1
-/**
- * @ingroup iface_ext_input_device_v1
- */
-#define EXT_INPUT_DEVICE_V1_VENDOR_SINCE_VERSION 1
-/**
- * @ingroup iface_ext_input_device_v1
- */
-#define EXT_INPUT_DEVICE_V1_PRODUCT_SINCE_VERSION 1
 /**
  * @ingroup iface_ext_input_device_v1
  */
@@ -306,30 +296,6 @@ static inline void
 ext_input_device_v1_send_name(struct wl_resource *resource_, const char *name)
 {
 	wl_resource_post_event(resource_, EXT_INPUT_DEVICE_V1_NAME, name);
-}
-
-/**
- * @ingroup iface_ext_input_device_v1
- * Sends an vendor event to the client owning the resource.
- * @param resource_ The client's resource
- * @param vendor input vendor
- */
-static inline void
-ext_input_device_v1_send_vendor(struct wl_resource *resource_, uint32_t vendor)
-{
-	wl_resource_post_event(resource_, EXT_INPUT_DEVICE_V1_VENDOR, vendor);
-}
-
-/**
- * @ingroup iface_ext_input_device_v1
- * Sends an product event to the client owning the resource.
- * @param resource_ The client's resource
- * @param vendor input product
- */
-static inline void
-ext_input_device_v1_send_product(struct wl_resource *resource_, uint32_t vendor)
-{
-	wl_resource_post_event(resource_, EXT_INPUT_DEVICE_V1_PRODUCT, vendor);
 }
 
 /**

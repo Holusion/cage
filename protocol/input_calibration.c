@@ -71,14 +71,12 @@ static const struct wl_message ext_input_device_v1_requests[] = {
 static const struct wl_message ext_input_device_v1_events[] = {
 	{ "removed", "", ext_input_device_calibration_unstable_v1_types + 0 },
 	{ "name", "s", ext_input_device_calibration_unstable_v1_types + 0 },
-	{ "vendor", "u", ext_input_device_calibration_unstable_v1_types + 0 },
-	{ "product", "u", ext_input_device_calibration_unstable_v1_types + 0 },
 	{ "type", "i", ext_input_device_calibration_unstable_v1_types + 0 },
 };
 
 WL_PRIVATE const struct wl_interface ext_input_device_v1_interface = {
 	"ext_input_device_v1", 1,
 	3, ext_input_device_v1_requests,
-	5, ext_input_device_v1_events,
+	3, ext_input_device_v1_events,
 };
 

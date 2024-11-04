@@ -140,20 +140,6 @@
       <arg name="name" type="string" summary="input name"/>
     </event>
 
-    <event name="vendor">
-      <description summary="The input device's vendor">
-        An input device will have a vendor, as in "USB Bus vendor ID".
-      </description>
-      <arg name="vendor" type="uint" summary="input vendor"/>
-    </event>
-
-    <event name="product">
-      <description summary="The input device product identifier">
-        An input device will have a USB Bus product ID.
-      </description>
-      <arg name="vendor" type="uint" summary="input product"/>
-    </event>
-
     <event name="type">
       <description summary="The input device's type">
         An input device will have a type, such as "touch" or "pointer"

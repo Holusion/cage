@@ -231,8 +231,6 @@ static void manager_send_device(struct input_calibration_manager_v1 *manager,
   ext_input_calibration_manager_v1_send_add(manager_resource, device_resource);
 
   ext_input_device_v1_send_name(device_resource, input_device->device->name);
-  ext_input_device_v1_send_product(device_resource, input_device->device->product);
-  ext_input_device_v1_send_vendor(device_resource, input_device->device->vendor);
   ext_input_device_v1_send_type(device_resource, input_device->device->type);
 
 }

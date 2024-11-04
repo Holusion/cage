@@ -1,4 +1,5 @@
 FROM debian:12-slim
+ENV DEBIAN_FRONTEND=noninteractive
 #debian 12 "bookworm" is required to have a recent-enough built-in meson.
 # backports are required for a recent-enough libdrm
 

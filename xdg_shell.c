@@ -19,27 +19,46 @@
 #include "xdg_shell.h"
 
 static void
-xdg_decoration_handle_destroy(struct wl_listener *listener, void *data)
+xdg_decoration_set_mode(struct cg_xdg_decoration *xdg_decoration)
 {
-	struct cg_xdg_decoration *xdg_decoration = wl_container_of(listener, xdg_decoration, destroy);
-
-	wl_list_remove(&xdg_decoration->destroy.link);
-	wl_list_remove(&xdg_decoration->request_mode.link);
-	free(xdg_decoration);
-}
-
-static void
-xdg_decoration_handle_request_mode(struct wl_listener *listener, void *data)
-{
-	struct cg_xdg_decoration *xdg_decoration = wl_container_of(listener, xdg_decoration, request_mode);
 	enum wlr_xdg_toplevel_decoration_v1_mode mode;
-
 	if (xdg_decoration->server->xdg_decoration) {
 		mode = WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE;
 	} else {
 		mode = WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_CLIENT_SIDE;
 	}
 	wlr_xdg_toplevel_decoration_v1_set_mode(xdg_decoration->wlr_decoration, mode);
+}
+
+static void
+xdg_decoration_handle_destroy(struct wl_listener *listener, void *data)
+{
+	struct cg_xdg_decoration *xdg_decoration = wl_container_of(listener, xdg_decoration, destroy);
+
+	wl_list_remove(&xdg_decoration->destroy.link);
+	wl_list_remove(&xdg_decoration->commit.link);
+	wl_list_remove(&xdg_decoration->request_mode.link);
+	free(xdg_decoration);
+}
+
+static void
+xdg_decoration_handle_commit(struct wl_listener *listener, void *data)
+{
+	struct cg_xdg_decoration *xdg_decoration = wl_container_of(listener, xdg_decoration, commit);
+
+	if (xdg_decoration->wlr_decoration->toplevel->base->initial_commit) {
+		xdg_decoration_set_mode(xdg_decoration);
+	}
+}
+
+static void
+xdg_decoration_handle_request_mode(struct wl_listener *listener, void *data)
+{
+	struct cg_xdg_decoration *xdg_decoration = wl_container_of(listener, xdg_decoration, request_mode);
+
+	if (xdg_decoration->wlr_decoration->toplevel->base->initialized) {
+		xdg_decoration_set_mode(xdg_decoration);
+	}
 }
 
 static struct cg_view *
@@ -66,8 +85,13 @@ popup_get_view(struct wlr_xdg_popup *popup)
 }
 
 static void
-popup_unconstrain(struct cg_view *view, struct wlr_xdg_popup *popup)
+popup_unconstrain(struct wlr_xdg_popup *popup)
 {
+	struct cg_view *view = popup_get_view(popup);
+	if (view == NULL) {
+		return;
+	}
+
 	struct cg_server *server = view->server;
 	struct wlr_box *popup_box = &popup->current.geometry;
 
@@ -196,11 +220,26 @@ handle_xdg_shell_surface_map(struct wl_listener *listener, void *data)
 }
 
 static void
+handle_xdg_shell_surface_commit(struct wl_listener *listener, void *data)
+{
+	struct cg_xdg_shell_view *xdg_shell_view = wl_container_of(listener, xdg_shell_view, commit);
+
+	if (!xdg_shell_view->xdg_toplevel->base->initial_commit) {
+		return;
+	}
+
+	/* When an xdg_surface performs an initial commit, the compositor must
+	 * reply with a configure so the client can map the surface. */
+	view_position(&xdg_shell_view->view);
+}
+
+static void
 handle_xdg_shell_surface_destroy(struct wl_listener *listener, void *data)
 {
 	struct cg_xdg_shell_view *xdg_shell_view = wl_container_of(listener, xdg_shell_view, destroy);
 	struct cg_view *view = &xdg_shell_view->view;
 
+	wl_list_remove(&xdg_shell_view->commit.link);
 	wl_list_remove(&xdg_shell_view->map.link);
 	wl_list_remove(&xdg_shell_view->unmap.link);
 	wl_list_remove(&xdg_shell_view->destroy.link);
@@ -221,72 +260,105 @@ static const struct cg_view_impl xdg_shell_view_impl = {
 };
 
 void
-handle_xdg_shell_surface_new(struct wl_listener *listener, void *data)
+handle_new_xdg_toplevel(struct wl_listener *listener, void *data)
 {
-	struct cg_server *server = wl_container_of(listener, server, new_xdg_shell_surface);
-	struct wlr_xdg_surface *xdg_surface = data;
+	struct cg_server *server = wl_container_of(listener, server, new_xdg_toplevel);
+	struct wlr_xdg_toplevel *toplevel = data;
 
-	switch (xdg_surface->role) {
+	struct cg_xdg_shell_view *xdg_shell_view = calloc(1, sizeof(struct cg_xdg_shell_view));
+	if (!xdg_shell_view) {
+		wlr_log(WLR_ERROR, "Failed to allocate XDG Shell view");
+		return;
+	}
+
+	view_init(&xdg_shell_view->view, server, CAGE_XDG_SHELL_VIEW, &xdg_shell_view_impl);
+	xdg_shell_view->xdg_toplevel = toplevel;
+
+	xdg_shell_view->commit.notify = handle_xdg_shell_surface_commit;
+	wl_signal_add(&toplevel->base->surface->events.commit, &xdg_shell_view->commit);
+	xdg_shell_view->map.notify = handle_xdg_shell_surface_map;
+	wl_signal_add(&toplevel->base->surface->events.map, &xdg_shell_view->map);
+	xdg_shell_view->unmap.notify = handle_xdg_shell_surface_unmap;
+	wl_signal_add(&toplevel->base->surface->events.unmap, &xdg_shell_view->unmap);
+	xdg_shell_view->destroy.notify = handle_xdg_shell_surface_destroy;
+	wl_signal_add(&toplevel->events.destroy, &xdg_shell_view->destroy);
+	xdg_shell_view->request_fullscreen.notify = handle_xdg_shell_surface_request_fullscreen;
+	wl_signal_add(&toplevel->events.request_fullscreen, &xdg_shell_view->request_fullscreen);
+
+	toplevel->base->data = xdg_shell_view;
+}
+
+static void
+popup_handle_destroy(struct wl_listener *listener, void *data)
+{
+	struct cg_xdg_popup *popup = wl_container_of(listener, popup, destroy);
+	wl_list_remove(&popup->destroy.link);
+	wl_list_remove(&popup->commit.link);
+	free(popup);
+}
+
+static void
+popup_handle_commit(struct wl_listener *listener, void *data)
+{
+	struct cg_xdg_popup *popup = wl_container_of(listener, popup, commit);
+
+	if (popup->xdg_popup->base->initial_commit) {
+		popup_unconstrain(popup->xdg_popup);
+	}
+}
+
+void
+handle_new_xdg_popup(struct wl_listener *listener, void *data)
+{
+	struct cg_server *server = wl_container_of(listener, server, new_xdg_popup);
+	struct wlr_xdg_popup *wlr_popup = data;
+
+	struct cg_view *view = popup_get_view(wlr_popup);
+	if (view == NULL) {
+		return;
+	}
+
+	struct wlr_scene_tree *parent_scene_tree = NULL;
+	struct wlr_xdg_surface *parent = wlr_xdg_surface_try_from_wlr_surface(wlr_popup->parent);
+	if (parent == NULL) {
+		return;
+	}
+	switch (parent->role) {
 	case WLR_XDG_SURFACE_ROLE_TOPLEVEL:;
-		struct cg_xdg_shell_view *xdg_shell_view = calloc(1, sizeof(struct cg_xdg_shell_view));
-		if (!xdg_shell_view) {
-			wlr_log(WLR_ERROR, "Failed to allocate XDG Shell view");
-			return;
-		}
-
-		view_init(&xdg_shell_view->view, server, CAGE_XDG_SHELL_VIEW, &xdg_shell_view_impl);
-		xdg_shell_view->xdg_toplevel = xdg_surface->toplevel;
-
-		xdg_shell_view->map.notify = handle_xdg_shell_surface_map;
-		wl_signal_add(&xdg_surface->surface->events.map, &xdg_shell_view->map);
-		xdg_shell_view->unmap.notify = handle_xdg_shell_surface_unmap;
-		wl_signal_add(&xdg_surface->surface->events.unmap, &xdg_shell_view->unmap);
-		xdg_shell_view->destroy.notify = handle_xdg_shell_surface_destroy;
-		wl_signal_add(&xdg_surface->events.destroy, &xdg_shell_view->destroy);
-		xdg_shell_view->request_fullscreen.notify = handle_xdg_shell_surface_request_fullscreen;
-		wl_signal_add(&xdg_surface->toplevel->events.request_fullscreen, &xdg_shell_view->request_fullscreen);
-
-		xdg_surface->data = xdg_shell_view;
+		parent_scene_tree = view->scene_tree;
 		break;
-	case WLR_XDG_SURFACE_ROLE_POPUP:;
-		struct wlr_xdg_popup *popup = xdg_surface->popup;
-		struct cg_view *view = popup_get_view(popup);
-		if (view == NULL) {
-			return;
-		}
-
-		struct wlr_scene_tree *parent_scene_tree = NULL;
-		struct wlr_xdg_surface *parent = wlr_xdg_surface_try_from_wlr_surface(popup->parent);
-		if (parent == NULL) {
-			return;
-		}
-		switch (parent->role) {
-		case WLR_XDG_SURFACE_ROLE_TOPLEVEL:;
-			parent_scene_tree = view->scene_tree;
-			break;
-		case WLR_XDG_SURFACE_ROLE_POPUP:
-			parent_scene_tree = parent->data;
-			break;
-		case WLR_XDG_SURFACE_ROLE_NONE:
-			break;
-		}
-		if (parent_scene_tree == NULL) {
-			return;
-		}
-
-		struct wlr_scene_tree *popup_scene_tree = wlr_scene_xdg_surface_create(parent_scene_tree, xdg_surface);
-		if (popup_scene_tree == NULL) {
-			wlr_log(WLR_ERROR, "Failed to allocate scene-graph node for XDG popup");
-			return;
-		}
-
-		popup_unconstrain(view, popup);
-
-		xdg_surface->data = popup_scene_tree;
+	case WLR_XDG_SURFACE_ROLE_POPUP:
+		parent_scene_tree = parent->data;
 		break;
 	case WLR_XDG_SURFACE_ROLE_NONE:
-		assert(false); // unreachable
+		break;
 	}
+	if (parent_scene_tree == NULL) {
+		return;
+	}
+
+	struct cg_xdg_popup *popup = calloc(1, sizeof(*popup));
+	if (popup == NULL) {
+		wlr_log(WLR_ERROR, "Failed to allocate popup");
+		return;
+	}
+
+	popup->xdg_popup = wlr_popup;
+
+	popup->destroy.notify = popup_handle_destroy;
+	wl_signal_add(&wlr_popup->events.destroy, &popup->destroy);
+
+	popup->commit.notify = popup_handle_commit;
+	wl_signal_add(&wlr_popup->base->surface->events.commit, &popup->commit);
+
+	struct wlr_scene_tree *popup_scene_tree = wlr_scene_xdg_surface_create(parent_scene_tree, wlr_popup->base);
+	if (popup_scene_tree == NULL) {
+		wlr_log(WLR_ERROR, "Failed to allocate scene-graph node for XDG popup");
+		free(popup);
+		return;
+	}
+
+	wlr_popup->base->data = popup_scene_tree;
 }
 
 void
@@ -305,8 +377,8 @@ handle_xdg_toplevel_decoration(struct wl_listener *listener, void *data)
 
 	xdg_decoration->destroy.notify = xdg_decoration_handle_destroy;
 	wl_signal_add(&wlr_decoration->events.destroy, &xdg_decoration->destroy);
+	xdg_decoration->commit.notify = xdg_decoration_handle_commit;
+	wl_signal_add(&wlr_decoration->toplevel->base->surface->events.commit, &xdg_decoration->commit);
 	xdg_decoration->request_mode.notify = xdg_decoration_handle_request_mode;
 	wl_signal_add(&wlr_decoration->events.request_mode, &xdg_decoration->request_mode);
-
-	xdg_decoration_handle_request_mode(&xdg_decoration->request_mode, wlr_decoration);
 }

@@ -12,6 +12,7 @@ struct cg_xdg_shell_view {
 	struct wlr_xdg_toplevel *xdg_toplevel;
 
 	struct wl_listener destroy;
+	struct wl_listener commit;
 	struct wl_listener unmap;
 	struct wl_listener map;
 	struct wl_listener request_fullscreen;
@@ -21,10 +22,19 @@ struct cg_xdg_decoration {
 	struct wlr_xdg_toplevel_decoration_v1 *wlr_decoration;
 	struct cg_server *server;
 	struct wl_listener destroy;
+	struct wl_listener commit;
 	struct wl_listener request_mode;
 };
 
-void handle_xdg_shell_surface_new(struct wl_listener *listener, void *data);
+struct cg_xdg_popup {
+	struct wlr_xdg_popup *xdg_popup;
+
+	struct wl_listener destroy;
+	struct wl_listener commit;
+};
+
+void handle_new_xdg_toplevel(struct wl_listener *listener, void *data);
+void handle_new_xdg_popup(struct wl_listener *listener, void *data);
 
 void handle_xdg_toplevel_decoration(struct wl_listener *listener, void *data);
 

@@ -258,7 +258,7 @@ handle_keybinding(struct cg_server *server, xkb_keysym_t sym)
 {
 #ifdef DEBUG
 	if (sym == XKB_KEY_Escape) {
-		wl_display_terminate(server->wl_display);
+		server_terminate(server);
 		return true;
 	}
 #endif
@@ -441,7 +441,7 @@ handle_new_input(struct wl_listener *listener, void *data)
 	case WLR_INPUT_DEVICE_SWITCH:
 		wlr_log(WLR_DEBUG, "Switch input is not implemented");
 		return;
-	case WLR_INPUT_DEVICE_TABLET_TOOL:
+	case WLR_INPUT_DEVICE_TABLET:
 	case WLR_INPUT_DEVICE_TABLET_PAD:
 		wlr_log(WLR_DEBUG, "Tablet input is not implemented");
 		return;
@@ -591,7 +591,7 @@ handle_cursor_axis(struct wl_listener *listener, void *data)
 	struct wlr_pointer_axis_event *event = data;
 
 	wlr_seat_pointer_notify_axis(seat->seat, event->time_msec, event->orientation, event->delta,
-				     event->delta_discrete, event->source);
+				     event->delta_discrete, event->source, event->relative_direction);
 	wlr_idle_notifier_v1_notify_activity(seat->server->idle, seat->seat);
 }
 

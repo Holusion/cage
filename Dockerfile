@@ -1,5 +1,6 @@
 FROM debian:12-slim
-#debian 12 is required to have a recent-enough built-in meson.
+#debian 12 "bookworm" is required to have a recent-enough built-in meson.
+# backports are required for a recent-enough libdrm
 
 # Install build tools
 RUN  apt-get -qqy update \
@@ -12,22 +13,23 @@ RUN  apt-get -qqy update \
     ninja-build \
   && rm -rf /var/lib/apt/lists/*
 
-# libdisplay-info dependencies
-RUN apt-get -qqy update \
-&& apt-get -qqy --no-install-recommends install \
-  edid-decode \
-  && rm -rf /var/lib/apt/lists/*
-
 
 # Wayland build-deps
-# most are runtime dependencies that could be removed
+# They are all wayland-scanner dependencies that are no longer required once the build completes
 RUN  apt-get -qqy update \
 && apt-get -qqy --no-install-recommends install \
-  quilt \
   libexpat1-dev \
   libffi-dev \
   libxml2-dev \
+  liblzma-dev \
 && rm -rf /var/lib/apt/lists/*
+
+# libdrm build dependencies
+RUN  apt-get -qqy update \
+&& apt-get -qqy --no-install-recommends install \
+  libpciaccess-dev \
+&& rm -rf /var/lib/apt/lists/*
+
 
 # wlroots build-deps (https://packages.debian.org/source/bookworm/wlroots)
 # - libwayland-dev is required for wayland-scanner, which is set as "native" but could probablyt be force to use the local file.
@@ -39,7 +41,6 @@ RUN  apt-get -qqy update \
   libcap-dev \
   libvulkan-dev \
   glslang-tools \
-  libdrm-dev \
   libegl1-mesa-dev \
   libgbm-dev \
   libgles2-mesa-dev \
@@ -62,16 +63,18 @@ RUN  apt-get -qqy update \
   libx11-xcb-dev \
   libxkbcommon-dev \
   hwdata \
-  libwayland-dev \
   xwayland \
   libxcb-ewmh-dev \
 && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 COPY . /app
-RUN meson setup build --prefer-static --default-library=static --buildtype=release -Dwerror=false -Doptimization=2 \
-  -Dxwayland=enabled \
+
+RUN meson setup build --default-library=static --prefer-static --buildtype=release -Dwerror=false \
+  -Dwlroots:xwayland=enabled -Dwlroots:examples=false \
   -Dwlroots:auto_features=enabled -Dwlroots:backends=auto -Dwlroots:renderers=auto \
-  -Dwayland:documentation=false
+  -Dwayland:documentation=false \
+  -Dlibdrm:intel=enabled \
+  -Dman-pages=disabled
 
 RUN ninja -C build

@@ -20,8 +20,6 @@ RUN  apt-get -qqy update \
 && apt-get -qqy --no-install-recommends install \
   libexpat1-dev \
   libffi-dev \
-  libxml2-dev \
-  liblzma-dev \
 && rm -rf /var/lib/apt/lists/*
 
 # libdrm build dependencies
@@ -73,7 +71,7 @@ COPY . /app
 RUN meson setup build --default-library=static --prefer-static --buildtype=release -Dwerror=false \
   -Dwlroots:xwayland=enabled -Dwlroots:examples=false \
   -Dwlroots:auto_features=enabled -Dwlroots:backends=auto -Dwlroots:renderers=auto \
-  -Dwayland:documentation=false \
+  -Dwayland:documentation=false -Dwayland:dtd_validation=false \
   -Dlibdrm:intel=enabled \
   -Dman-pages=disabled
 

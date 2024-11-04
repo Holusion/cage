@@ -1,6 +1,7 @@
 FROM debian:12-slim
-#debian 12 is required to have a recent-enough built-in meson.
 ENV DEBIAN_FRONTEND=noninteractive
+#debian 12 "bookworm" is required to have a recent-enough built-in meson.
+# backports are required for a recent-enough libdrm
 
 # Install build tools
 RUN  apt-get -qqy update \
@@ -14,21 +15,21 @@ RUN  apt-get -qqy update \
     ninja-build \
   && rm -rf /var/lib/apt/lists/*
 
-# libdisplay-info dependencies
-RUN apt-get -qqy update \
-&& apt-get -qqy --no-install-recommends install \
-  edid-decode \
-  && rm -rf /var/lib/apt/lists/*
-
 
 # Wayland build-deps
-# most are runtime dependencies that could be removed
+# They are all wayland-scanner dependencies that are no longer required once the build completes
 RUN  apt-get -qqy update \
 && apt-get -qqy --no-install-recommends install \
-  quilt \
   libexpat1-dev \
   libffi-dev \
 && rm -rf /var/lib/apt/lists/*
+
+# libdrm build dependencies
+RUN  apt-get -qqy update \
+&& apt-get -qqy --no-install-recommends install \
+  libpciaccess-dev \
+&& rm -rf /var/lib/apt/lists/*
+
 
 # wlroots build-deps (https://packages.debian.org/source/bookworm/wlroots)
 RUN  apt-get -qqy update \
@@ -38,7 +39,6 @@ RUN  apt-get -qqy update \
   libcap-dev \
   libvulkan-dev \
   glslang-tools \
-  libdrm-dev \
   libegl1-mesa-dev \
   libgbm-dev \
   libgles2-mesa-dev \
@@ -66,29 +66,15 @@ RUN  apt-get -qqy update \
 && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
+COPY . /app
 
-RUN mkdir -p /app/subprojects
-
-COPY  meson_options.txt meson.build /app/
-COPY *.in *.scd .clang-format .clang-format-ignore /app/
-
-COPY subprojects/*.wrap  /app/subprojects/
-COPY subprojects/packagefiles /app/subprojects/packagefiles
-COPY subprojects/packagecache /app/subprojects/packagecache
-
-COPY ./protocol /app/protocol
-COPY *.[ch] /app/
-
-
-# Fix for the use of local wayland-scanner in subsequent builds
-ENV PATH="${PATH}:/app/build/subprojects/wayland-1.22.0/src"
-
-RUN meson setup build --prefer-static --default-library=static --buildtype=release -Dwerror=false \
-  -Dxwayland=enabled -Dinput_calibration=enabled -Dman-pages=disabled \
+RUN meson setup build --default-library=static --prefer-static --buildtype=release -Dwerror=false \
+  -Dwlroots:xwayland=enabled -Dwlroots:examples=false \
   -Dwlroots:auto_features=enabled -Dwlroots:backends=auto -Dwlroots:renderers=auto \
-  -Dwayland:documentation=false -Dwayland:dtd_validation=false
+  -Dwayland:documentation=false -Dwayland:dtd_validation=false \
+  -Dlibdrm:intel=enabled \
+  -Dman-pages=disabled -Dinput_calibration=enabled
 
 RUN ninja -C build
-
 # Makes the image unusable, but useful to use with `docker buildx build --output=type=local`as we are.
 RUN rm -rf /usr /var

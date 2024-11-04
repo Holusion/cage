@@ -25,6 +25,7 @@ struct cg_server {
 	struct wlr_renderer *renderer;
 	struct wlr_allocator *allocator;
 	struct wlr_session *session;
+	struct wl_listener display_destroy;
 
 	struct cg_seat *seat;
 	struct wlr_idle_notifier_v1 *idle;
@@ -44,7 +45,8 @@ struct cg_server {
 	struct wl_listener output_layout_change;
 
 	struct wl_listener xdg_toplevel_decoration;
-	struct wl_listener new_xdg_shell_surface;
+	struct wl_listener new_xdg_toplevel;
+	struct wl_listener new_xdg_popup;
 
 	struct wl_listener new_virtual_keyboard;
 	struct wl_listener new_virtual_pointer;
@@ -60,6 +62,9 @@ struct cg_server {
 	bool xdg_decoration;
 	bool allow_vt_switch;
 	bool return_app_code;
+	bool terminated;
 };
+
+void server_terminate(struct cg_server *server);
 
 #endif

@@ -1,3 +1,7 @@
 /subprojects/*/
 !/subprojects/*.wrap
+!/subprojects/packagecache/
 !/subprojects/packagefiles/
+/build
+/.vscode
+/contrib

@@ -103,7 +103,9 @@ view_position(struct cg_view *view)
 	}else{
 		wlr_log(WLR_INFO, "view_position %dx%d+%d+%d",geom.width, geom.height, view->lx, view->ly);
 	}
-	wlr_scene_node_set_position(&view->scene_tree->node, view->lx, view->ly);
+	if (view->scene_tree) {
+		wlr_scene_node_set_position(&view->scene_tree->node, view->lx, view->ly);
+	}
 	/*
 	if (view_is_primary(view) || view_extends_output_layout(view, &layout_box)) {
 		view_maximize(view, &layout_box);

@@ -141,8 +141,8 @@ static void get_position(struct cg_view *view, int *x_out, int *y_out)
 	struct wlr_box geom;
 
 	wlr_xdg_surface_get_geometry(xdg_shell_view->xdg_toplevel->base, &geom);
-	*x_out = geom.width;
-	*y_out = geom.height;
+	*x_out = geom.x;
+	*y_out = geom.y;
 }
 
 
